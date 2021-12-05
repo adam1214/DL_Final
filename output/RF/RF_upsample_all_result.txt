@@ -1,0 +1,16 @@
+===================== no_remove_train_feature
+Train Kappa = 0.693
+Train UAR = 77.07 %
+Train ACC = 72.73 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.6707
+Train UAR = 75.55 %
+Train ACC = 70.85 %
+===================== remove_low_importance_train_feature
+Train Kappa = 0.6609
+Train UAR = 74.84 %
+Train ACC = 69.91 %
+===================== remove_zero_importance_train_feature
+Train Kappa = 0.6962
+Train UAR = 77.5 %
+Train ACC = 73.04 %

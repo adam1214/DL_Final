@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from sklearn import ensemble
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import cohen_kappa_score, make_scorer, recall_score, accuracy_score
 import joblib
@@ -33,27 +33,31 @@ if __name__ == "__main__":
     oversample = RandomOverSampler(random_state=100)
     train_data_upsample, train_label_upsample = oversample.fit_resample(train_data, train_label)
     
-    clf = ensemble.RandomForestClassifier(n_jobs=-1, random_state=123)
+    clf = GradientBoostingClassifier(random_state=123)
     scorer = make_scorer(my_custom_score, greater_is_better=True)
     params_space = {
-        'n_estimators': range(10, 501, 10),
-        'criterion': ['gini', 'entropy'],
-        'min_samples_leaf': range(1, 11, 1),
-        'max_features': ['auto', 'sqrt', 'log2'],
-        'bootstrap': [True, False],
-        'oob_score': [True, False],
+        'loss': ['deviance'],
+        'learning_rate': [0.1, 0.01, 0.001],
+        'n_estimators': range(10, 200, 10),
+        'criterion': ['friedman_mse', 'squared_error', 'mse'],
+        'min_samples_split': [2,3,4,5,6,7,8,9],
+        'min_samples_leaf': [1,2,3,4,5,6,7,8,9,10],
+        'max_depth': [3,4,5,6,7],
+        'init': [None, 'zero'],
+        'max_features': [None, 'auto', 'sqrt','log2'],
         'warm_start': [True, False],
-        'class_weight': ['balanced', 'balanced_subsample'],
+        'n_iter_no_change': [10, 15, 20, None],
+        'tol': [1e-5, 1e-4, 1e-3],
         'ccp_alpha': [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5]
         }
     
-    s_CV = RandomizedSearchCV(clf, params_space, cv=5, verbose=1, n_jobs=-1, n_iter=45, scoring=scorer, refit=True, random_state=123)
+    s_CV = RandomizedSearchCV(clf, params_space, cv=5, verbose=1, n_jobs=-1, n_iter=100, scoring=scorer, refit=True, random_state=123)
     s_CV.fit(train_data_upsample, train_label_upsample)
     CV_result = s_CV.cv_results_
     best_clf = s_CV.best_estimator_
     train_pred = best_clf.predict(train_data)
     
-    with open('./output/RF/RF_upsample_all_result.txt', 'a') as f:
+    with open('./output/GBC/GBC_upsample_all_result.txt', 'a') as f:
         print('=====================', features_key_list_train[args.feature_num], file=f)
         print('Train Kappa =', round(cohen_kappa_score(train_label, train_pred), 4), file=f)
         print('Train UAR =', round(recall_score(train_label, train_pred, average='macro')*100, 2), '%', file=f)
@@ -69,6 +73,6 @@ if __name__ == "__main__":
     ID_arr = np.array(ID_arr)
     combine = np.concatenate((ID_arr[:,np.newaxis], test_pred[:,np.newaxis]), axis=1)
     df = pd.DataFrame(combine, columns = ['ID','LEVEL'])
-    out_csv_name = './output/RF/RF_upsample' + str(args.feature_num) + '.csv'
+    out_csv_name = './output/GBC/GBC_upsample' + str(args.feature_num) + '.csv'
     df.to_csv(out_csv_name, index=False)
     
