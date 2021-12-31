@@ -14,3 +14,27 @@ Train ACC = 69.91 %
 Train Kappa = 0.6962
 Train UAR = 77.5 %
 Train ACC = 73.04 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.6673
+Train UAR = 75.59 %
+Train ACC = 70.53 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.5823
+Train UAR = 69.22 %
+Train ACC = 62.7 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.5823
+Train UAR = 69.22 %
+Train ACC = 62.7 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.5823
+Train UAR = 69.22 %
+Train ACC = 62.7 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.5823
+Train UAR = 69.22 %
+Train ACC = 62.7 %
+===================== remove_low_importance_and_high_correlation_train_feature
+Train Kappa = 0.5823
+Train UAR = 69.22 %
+Train ACC = 62.7 %

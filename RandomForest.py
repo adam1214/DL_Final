@@ -18,21 +18,27 @@ def my_custom_score(y_true, y_pred):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
-    parser.add_argument('-f', "--feature_num", type=int, help="which version of feature you want to use?", default=0)
+    parser.add_argument('-f', "--feature_num", type=int, help="which version of feature you want to use?", default=1)
     args = parser.parse_args()
-    
+    '''
     new_all_data_path = './data/new_all_data.pickle'
     f = open(new_all_data_path, 'rb') 
     new_all_data_dict = pickle.load(f)
-    features_key_list_train = ['no_remove_train_feature', 'remove_low_importance_and_high_correlation_train_feature', 'remove_low_importance_train_feature', 'remove_zero_importance_train_feature']
+    '''
+    new_all_data_path = './data/new_all_data_after_Fa2.pickle'
+    f = open(new_all_data_path, 'rb') 
+    new_all_data_dict = pickle.load(f)
+
+    #features_key_list_train = ['no_remove_train_feature', 'remove_low_importance_and_high_correlation_train_feature', 'remove_low_importance_train_feature', 'remove_zero_importance_train_feature']
+    features_key_list_train = ['no_remove_train_feature', 'remove_low_importance_and_high_correlation_train_feature']
     features_key_list_test = ['no_remove_test_feature', 'remove_low_importance_and_high_correlation_test_feature', 'remove_low_importance_test_feature', 'remove_zero_importance_test_feature']
     train_data = new_all_data_dict['train']['feature'][features_key_list_train[args.feature_num]]
     train_label = new_all_data_dict['train']['label']
     test_data = new_all_data_dict['test']['feature'][features_key_list_test[args.feature_num]]
-    
+    '''
     oversample = RandomOverSampler(random_state=100)
     train_data_upsample, train_label_upsample = oversample.fit_resample(train_data, train_label)
-    
+    '''
     clf = ensemble.RandomForestClassifier(n_jobs=-1, random_state=123)
     scorer = make_scorer(my_custom_score, greater_is_better=True)
     params_space = {
@@ -48,7 +54,7 @@ if __name__ == "__main__":
         }
     
     s_CV = RandomizedSearchCV(clf, params_space, cv=5, verbose=1, n_jobs=-1, n_iter=45, scoring=scorer, refit=True, random_state=123)
-    s_CV.fit(train_data_upsample, train_label_upsample)
+    s_CV.fit(train_data, train_label)
     CV_result = s_CV.cv_results_
     best_clf = s_CV.best_estimator_
     train_pred = best_clf.predict(train_data)
@@ -58,7 +64,7 @@ if __name__ == "__main__":
         print('Train Kappa =', round(cohen_kappa_score(train_label, train_pred), 4), file=f)
         print('Train UAR =', round(recall_score(train_label, train_pred, average='macro')*100, 2), '%', file=f)
         print('Train ACC =', round(accuracy_score(train_label, train_pred)*100, 2), '%', file=f)
-    #joblib.dump(best_clf, './model/' + features_key_list_train[0] + '/randomforest.model')
+    joblib.dump(best_clf, './model/' + '/randomforest_' + str(args.feature_num) + '.model')
     
     test_path = './data/test.csv'
     t_f = pd.read_csv(test_path)
