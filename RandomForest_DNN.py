@@ -15,6 +15,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import pdb
+from collections import Counter
 #import sys
 #sys.setrecursionlimit(3000)
 
@@ -51,19 +52,19 @@ class DNN(nn.Module):
         self.layer_2 = nn.Linear(64, 32)
         self.layer_3 = nn.Linear(32, 16)
         self.layer_out = nn.Linear(16, 10) 
-        
-        self.Tanh = nn.Tanh()
+        # https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+        self.activate_fun = nn.GELU()
         self.dropout = nn.Dropout(p=0.2)
         self.batchnorm1 = nn.BatchNorm1d(64)
         self.batchnorm2 = nn.BatchNorm1d(32)
         self.batchnorm3 = nn.BatchNorm1d(16)
         
     def forward(self, inputs):
-        x = self.Tanh(self.layer_1(inputs))
+        x = self.activate_fun(self.layer_1(inputs))
         x = self.batchnorm1(x)
-        x = self.Tanh(self.layer_2(x))
+        x = self.activate_fun(self.layer_2(x))
         x = self.batchnorm2(x)
-        x = self.Tanh(self.layer_3(x))
+        x = self.activate_fun(self.layer_3(x))
         x = self.batchnorm3(x)
         x = self.dropout(x)
         x = self.layer_out(x)
@@ -77,7 +78,9 @@ if __name__ == "__main__":
     parser.add_argument('-e', "--epoch", type=int, help="set epoch", default=200)
     parser.add_argument('-w', "--weight_decay", type=float, help="set weight_decay", default=0.01)
     parser.add_argument('-f', "--feature_num", type=int, help="which version of feature you want to use?", default=1)
+    parser.add_argument('-c', "--weighted_cross_entropy", type=bool, help="set weighted cross_entropy or not", default=True)
     args = parser.parse_args()
+    print(args)
     torch.manual_seed(100)
     
     new_all_data_path = './data/new_all_data_after_Fa2.pickle'
@@ -117,8 +120,14 @@ if __name__ == "__main__":
     model = DNN()
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    criterion = nn.CrossEntropyLoss()
+    train_label_counter = Counter(train_outputs)
+    max_label_cnt = max(train_label_counter, key=train_label_counter.get)
     
+    if args.weighted_cross_entropy == True:
+        criterion = nn.CrossEntropyLoss(weight=torch.FloatTensor([max_label_cnt/train_label_counter[1], max_label_cnt/train_label_counter[2], max_label_cnt/train_label_counter[3], max_label_cnt/train_label_counter[4], max_label_cnt/train_label_counter[5], max_label_cnt/train_label_counter[6], max_label_cnt/train_label_counter[7], max_label_cnt/train_label_counter[8], max_label_cnt/train_label_counter[9], max_label_cnt/train_label_counter[10]]).to(device))
+    else:
+        criterion = nn.CrossEntropyLoss()
+        
     max_kappa_val = -100
     best_epoch = 0
     for e in range(1, (args.epoch)+1, 1):
