@@ -16,6 +16,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 import pdb
 from collections import Counter
+import matplotlib.pyplot as plt
 #import sys
 #sys.setrecursionlimit(3000)
 
@@ -130,10 +131,12 @@ if __name__ == "__main__":
         
     max_kappa_val = -100
     best_epoch = 0
+    train_loss_list, val_loss_list = [], []
     for e in range(1, (args.epoch)+1, 1):
         # training
         model.train()
-        epoch_loss = 0
+        epoch_loss_train = 0
+        epoch_loss_val = 0
         epoch_kappa_train = 0
         for X_batch, y_batch in train_loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
@@ -147,7 +150,8 @@ if __name__ == "__main__":
             optimizer.step()
             
             epoch_kappa_train += kappa.item()
-            epoch_loss += loss.item()
+            epoch_loss_train += loss.item()
+        train_loss_list.append(epoch_loss_train/len(train_loader))
         
         # validation
         preds = []
@@ -158,16 +162,19 @@ if __name__ == "__main__":
                 X_batch, y_batch = X_batch.to(device), y_batch.to(device)
                 
                 y_pred = model(X_batch)
+                loss = criterion(y_pred, y_batch)
+                epoch_loss_val += loss.item()
                 preds += torch.argmax(y_pred, dim=1).tolist()
                 labels += y_batch.cpu().tolist()
+            val_loss_list.append(epoch_loss_val/len(val_loader))
             kappa_val = cohen_kappa_score(labels, preds)
-        
+            
         if kappa_val > max_kappa_val:
             max_kappa_val = kappa_val
             best_epoch = e
             checkpoint = {'epoch': e, 'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}
             torch.save(checkpoint, './model/RF_DNN_best_model.pth')
-        print(f'Epoch {e+0:03}: | Loss: {epoch_loss/len(train_loader):.5f} | train_kappa: {epoch_kappa_train/len(train_loader):.4f} | val_kappa: {kappa_val:.4f}')
+        print(f'Epoch {e+0:03}: | Loss: {epoch_loss_train/len(train_loader):.5f} | train_kappa: {epoch_kappa_train/len(train_loader):.4f} | val_kappa: {kappa_val:.4f}')
     
     print('The best epoch:', best_epoch)
     model = DNN()
@@ -212,3 +219,13 @@ if __name__ == "__main__":
     df = pd.DataFrame(combine, columns = ['ID','LEVEL'])
     out_csv_name = './output/RF/RF_upsample' + str(args.feature_num) + '.csv'
     df.to_csv(out_csv_name, index=False)
+    
+    # plot training loss
+    plt.figure()
+    plt.title("RF->DNN Train Val Loss")
+    plt.xlabel("Batch")
+    plt.ylabel("Epoch Average Loss")
+    plt.plot(np.arange(1, args.epoch+1), train_loss_list, label = 'train loss', color='blue')
+    plt.plot(np.arange(1, args.epoch+1), val_loss_list, label = 'val loss', color='red')
+    plt.legend(loc="best")
+    plt.savefig('RF_DNN Train Val Loss.png')
